@@ -43,7 +43,7 @@ export interface ScoreState {
   error: string | null;
 }
 
-export function useScores(chainId: number = 1) {
+export function useScores() {
   const { account, isConnected } = useStellarWallet();
   const address = account?.publicKey || null;
   const [state, setState] = useState<ScoreState>({
@@ -56,7 +56,7 @@ export function useScores(chainId: number = 1) {
   const [lastFetchTime, setLastFetchTime] = useState<number>(0);
   const FETCH_COOLDOWN = 60000; // 60 seconds cooldown (increased from 30s for aggressive rate limiting)
 
-    const fetchScores = async (walletAddress: string, targetChainId: number) => {
+    const fetchScores = async (walletAddress: string) => {
     // Check cooldown to prevent spam
     const now = Date.now();
     if (now - lastFetchTime < FETCH_COOLDOWN) {
@@ -75,7 +75,6 @@ export function useScores(chainId: number = 1) {
         },
         body: JSON.stringify({
           walletAddress,
-          chainId: targetChainId,
         }),
       });
 
@@ -108,14 +107,14 @@ export function useScores(chainId: number = 1) {
     if (address && isConnected) {
       // Reset cooldown for manual refetch
       setLastFetchTime(0);
-      fetchScores(address, chainId);
+      fetchScores(address);
     }
   };
 
   // Auto-fetch when wallet connects or changes
   useEffect(() => {
     if (address && isConnected) {
-      fetchScores(address, chainId);
+      fetchScores(address);
     } else {
       // Reset state when wallet disconnects
       setState({
@@ -124,7 +123,7 @@ export function useScores(chainId: number = 1) {
         error: null,
       });
     }
-  }, [address, isConnected, chainId]);
+  }, [address, isConnected]);
 
   return {
     ...state,

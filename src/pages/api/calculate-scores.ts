@@ -2,7 +2,11 @@
 // Main endpoint for calculating DeFi scores
 
 import type { NextApiRequest, NextApiResponse } from 'next';
-// ❌ REMOVED: import { getPortfolioData } from '../../lib/server/oneinch-service';
+import { 
+  getStellarPortfolioData,
+  convertStellarToAnalysisFormat,
+  isValidStellarPublicKey,
+} from '../../lib/server/stellar-service';
 import { 
   analyzeWalletAge,
   analyzeTransactionFrequency,
@@ -56,8 +60,7 @@ interface ScoreResponse {
 
 // API Request interface
 interface ScoreRequest {
-  walletAddress: string;
-  chainId: number;
+  walletAddress: string; // Stellar public key (G...)
 }
 
 export default async function handler(
@@ -71,43 +74,49 @@ export default async function handler(
 
   try {
     // Validate request body
-    const { walletAddress, chainId }: ScoreRequest = req.body;
+    const { walletAddress }: ScoreRequest = req.body;
 
-    if (!walletAddress || !chainId) {
+    if (!walletAddress) {
       return res.status(400).json({ 
-        error: 'Missing required fields: walletAddress and chainId' 
+        error: 'Missing required field: walletAddress (Stellar public key)' 
       });
     }
 
-    // Validate wallet address format (basic validation)
-    // TODO: Update for Stellar public key format
-    if (!/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) {
+    // Validate Stellar public key format
+    if (!isValidStellarPublicKey(walletAddress)) {
       return res.status(400).json({ 
-        error: 'Invalid wallet address format' 
+        error: 'Invalid Stellar public key format. Must start with G and be 56 characters long.' 
       });
     }
 
-    // Validate chain ID
-    // TODO: Update for Stellar network
-    const supportedChains = [1, 137, 10, 42161, 8453]; // Ethereum, Polygon, Optimism, Arbitrum, Base
-    if (!supportedChains.includes(chainId)) {
-      return res.status(400).json({ 
-        error: 'Unsupported chain ID' 
-      });
-    }
-
-    console.log(`🔍 Analyzing wallet: ${walletAddress} on chain: ${chainId}`);
-    console.log('⚠️ 1inch API removed - using placeholder data');
+    console.log(`🔍 Analyzing Stellar account: ${walletAddress}`);
     
-    // ❌ REMOVED: 1inch API call
-    // Placeholder portfolio data structure
-    const portfolioData = {
-      balances: null,
-      history: null,
-      gasPrice: null,
-      fusionOrders: null,
-      limitOrders: null,
+    // Fetch Stellar portfolio data
+    const stellarPortfolioData = await getStellarPortfolioData(walletAddress);
+    
+    // If account not found or no activity, create default/empty data structure
+    // This allows analysis to continue with low scores instead of error
+    const defaultPortfolioData = {
+      balances: [],
+      transactions: [],
+      operations: [],
+      effects: [],
+      accountAge: 0, // New account
+      trustlines: 0,
+      totalValue: 0,
+      nativeBalance: '0',
+      assets: [],
     };
+
+    const portfolioDataForAnalysis = stellarPortfolioData || defaultPortfolioData;
+    const hasActivity = stellarPortfolioData !== null && stellarPortfolioData.transactions.length > 0;
+
+    if (!hasActivity) {
+      console.log('⚠️ Account has no activity - using default values for analysis (low scores expected)');
+    }
+
+    // Convert Stellar data to analysis format
+    const portfolioData = convertStellarToAnalysisFormat(portfolioDataForAnalysis);
 
     // Step 2: Analyze data quality
     const dataQuality = assessDataQuality(portfolioData);
@@ -116,7 +125,20 @@ export default async function handler(
     // Step 3: Calculate Risk Score Metrics
     console.log('📊 Calculating Risk Score metrics...');
     
-    const walletAgeScore = analyzeWalletAge(portfolioData.history);
+    // Use account age from Stellar data if available, otherwise calculate from history
+    let walletAgeScore: number;
+    if (portfolioDataForAnalysis.accountAge !== undefined && portfolioDataForAnalysis.accountAge > 0) {
+      // Direct account age calculation for Stellar
+      const ageInDays = portfolioDataForAnalysis.accountAge;
+      if (ageInDays < 30) walletAgeScore = 20;
+      else if (ageInDays < 90) walletAgeScore = 40;
+      else if (ageInDays < 365) walletAgeScore = 60;
+      else if (ageInDays < 1095) walletAgeScore = 80;
+      else walletAgeScore = 100;
+    } else {
+      // No account age or new account - use history or default to low score
+      walletAgeScore = analyzeWalletAge(portfolioData.history);
+    }
     analyzedMetrics.push('Wallet Age');
 
     const transactionFrequencyScore = analyzeTransactionFrequency(portfolioData.history);
@@ -182,7 +204,7 @@ export default async function handler(
     analyzedMetrics.push('User Behavior Classification');
 
     // Step 7: Process portfolio data for visualization
-    const processedPortfolioData = await processPortfolioData(portfolioData.balances);
+    const processedPortfolioData = await processPortfolioData(portfolioDataForAnalysis);
 
     // Step 8: Prepare response with analysis data
     const response: ScoreResponse = {
@@ -209,39 +231,82 @@ export default async function handler(
     };
 
     console.log('✅ Score calculation completed:', {
-      wallet: walletAddress.slice(0, 10) + '...',
+      account: walletAddress.slice(0, 10) + '...',
       riskScore: response.deFiRiskScore,
       healthScore: response.deFiHealthScore,
       userType: response.userType,
       dataQuality,
+      accountAge: portfolioDataForAnalysis.accountAge,
+      transactions: portfolioDataForAnalysis.transactions.length,
+      hasActivity,
     });
 
     // Return successful response
     return res.status(200).json(response);
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Score calculation failed:', error);
+
+    // Provide more specific error messages
+    let errorMessage = 'Internal server error during score calculation';
+    
+    if (error?.message?.includes('Invalid Stellar public key')) {
+      errorMessage = 'Invalid Stellar public key format';
+      return res.status(400).json({ error: errorMessage });
+    }
+    
+    if (error?.response?.status === 404 || error?.message?.includes('404')) {
+      errorMessage = 'Stellar account not found. Make sure the account exists and has been funded.';
+      return res.status(404).json({ error: errorMessage });
+    }
+
+    if (error?.message) {
+      errorMessage = error.message;
+    }
 
     // Return error response
     return res.status(500).json({
-      error: 'Internal server error during score calculation'
+      error: errorMessage,
+      details: process.env.NODE_ENV === 'development' ? error?.stack : undefined
     });
   }
 }
 
 // Helper function to process portfolio data for frontend visualization
-async function processPortfolioData(balances: any) {
-  if (!balances || Object.keys(balances).length === 0) {
+async function processPortfolioData(portfolioData: any) {
+  if (!portfolioData || !portfolioData.balances || portfolioData.balances.length === 0) {
     return {
       totalValue: 0,
       tokens: []
     };
   }
 
-  // Placeholder implementation - will be replaced with Stellar data
+  // Process Stellar balances into token format
+  const tokens = portfolioData.balances.map((balance: any) => {
+    const balanceNum = parseFloat(balance.balance || '0');
+    // TODO: Get actual asset prices from external API
+    const price = 0; // Placeholder
+    const value = balanceNum * price;
+
+    return {
+      symbol: balance.assetType === 'native' ? 'XLM' : (balance.assetCode || 'UNKNOWN'),
+      amount: balance.balance,
+      price: price.toString(),
+      value: value,
+      percentage: 0, // Will be calculated based on total
+    };
+  });
+
+  const totalValue = tokens.reduce((sum: number, token: any) => sum + token.value, 0);
+  
+  // Calculate percentages
+  tokens.forEach((token: any) => {
+    token.percentage = totalValue > 0 ? (token.value / totalValue) * 100 : 0;
+  });
+
   return {
-    totalValue: 0,
-    tokens: []
+    totalValue,
+    tokens
   };
 }
 

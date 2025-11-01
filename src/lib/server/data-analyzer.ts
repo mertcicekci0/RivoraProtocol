@@ -1,6 +1,6 @@
 // Data Analysis Functions
-// This module transforms raw blockchain data into scoring metrics
-// ❌ UPDATED: Removed 1inch-specific references
+// This module transforms raw Stellar blockchain data into scoring metrics
+// Updated for Stellar network integration
 
 interface WalletData {
   balances: any;
@@ -8,8 +8,8 @@ interface WalletData {
   gasPrice: any;
   fusionOrders: any;
   limitOrders: any;
+  accountAge?: number; // Stellar account age in days (optional, can come from account data)
 }
-// TODO: Update for Stellar data format
 
 // ========================================
 // RISK SCORE METRICS ANALYSIS
@@ -60,26 +60,33 @@ export function analyzeTransactionFrequency(history: any): number {
 export function analyzeSecureSwapUsage(fusionOrders: any, history: any): number {
   let securityScore = 50; // Base score
 
-  // Bonus for using Fusion+ (secure swaps)
-  if (fusionOrders && fusionOrders.orders && fusionOrders.orders.length > 0) {
-    securityScore += 30;
-  }
-
-  // Analyze transaction patterns for security-conscious behavior
+  // Stellar doesn't have "Fusion+" but we can analyze path payments and DEX usage
+  // Path payments indicate smart routing (similar to Fusion+)
+  
+  // Analyze transaction patterns for secure behavior
   if (history && history.result) {
     const transactions = history.result;
     
-    // Check for interactions with known secure protocols
-    const secureProtocols = ['1inch', 'uniswap', 'curve', 'balancer'];
-    const secureInteractions = transactions.filter((tx: any) => 
-      secureProtocols.some(protocol => 
-        tx.to?.toLowerCase().includes(protocol) || 
-        tx.input?.toLowerCase().includes(protocol)
-      )
+    // Count path payment operations (indicates smart routing/swaps)
+    const pathPaymentOps = transactions.filter((tx: any) => 
+      tx.type === 'path_payment_strict_receive' || 
+      tx.type === 'path_payment_strict_send'
     ).length;
 
-    const securityRatio = secureInteractions / transactions.length;
-    securityScore += securityRatio * 20; // Up to 20 bonus points
+    if (transactions.length > 0) {
+      const pathPaymentRatio = pathPaymentOps / transactions.length;
+      securityScore += pathPaymentRatio * 30; // Up to 30 bonus points for path payments
+    }
+
+    // Additional security points for transaction success rate
+    const successfulTxs = transactions.filter((tx: any) => 
+      tx.transactionSuccessful !== false
+    ).length;
+    
+    if (transactions.length > 0) {
+      const successRatio = successfulTxs / transactions.length;
+      securityScore += successRatio * 20; // Up to 20 bonus points
+    }
   }
 
   return Math.min(100, securityScore);
@@ -90,21 +97,22 @@ export function analyzeTokenTrustworthiness(balances: any): number {
     return 30; // Default score for empty portfolio
   }
 
-  // Known trusted tokens (you can expand this list)
-  const trustedTokens = [
-    '0xa0b86a33e6b8e6b9c4b25e1e1e7d2e3f4e5e6e7e', // ETH
-    '0xdac17f958d2ee523a2206206994597c13d831ec7', // USDT
-    '0xa0b86a33e6b8e6b9c4b25e1e1e7d2e3f4e5e6e7e', // USDC
-    '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599', // WBTC
-    // Add more trusted token addresses
+  // Known trusted Stellar assets
+  const trustedAssets = [
+    'XLM', // Native Stellar
+    'USDC', // USD Coin on Stellar
+    'USDT', // Tether on Stellar
+    'BTC', // Bitcoin on Stellar (various issuers)
+    'ETH', // Ethereum on Stellar
   ];
 
-  const tokenAddresses = Object.keys(balances);
-  const trustedCount = tokenAddresses.filter(addr => 
-    trustedTokens.includes(addr.toLowerCase())
-  ).length;
+  const assetKeys = Object.keys(balances);
+  const trustedCount = assetKeys.filter(key => {
+    // Check if asset code is in trusted list
+    return trustedAssets.some(asset => key.includes(asset));
+  }).length;
 
-  const trustworthinessRatio = trustedCount / tokenAddresses.length;
+  const trustworthinessRatio = trustedCount / Math.max(assetKeys.length, 1);
   
   // Score based on ratio of trusted tokens (30-100 scale)
   return 30 + (trustworthinessRatio * 70);
@@ -153,48 +161,47 @@ export function analyzePortfolioConcentration(balances: any): number {
 }
 
 export function analyzeTokenAgeAverage(balances: any): number {
-  // This would require additional API calls to get token creation dates
-  // For hackathon purposes, we'll use a simplified heuristic
+  // Stellar asset maturity analysis based on well-known stablecoins and major assets
   
   if (!balances || Object.keys(balances).length === 0) {
     return 50; // Default score
   }
 
-  // Known mature tokens get higher scores
-  const matureTokens = [
-    '0xa0b86a33e6b8e6b9c4b25e1e1e7d2e3f4e5e6e7e', // ETH
-    '0xdac17f958d2ee523a2206206994597c13d831ec7', // USDT
-    '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599', // WBTC
+  // Known mature Stellar assets (established issuers and stablecoins)
+  const matureAssets = [
+    'XLM', // Native Stellar - always mature
+    'USDC', // Circle's USD Coin
+    'USDT', // Tether
   ];
 
-  const tokenAddresses = Object.keys(balances);
-  const matureCount = tokenAddresses.filter(addr => 
-    matureTokens.includes(addr.toLowerCase())
+  const assetKeys = Object.keys(balances);
+  const matureCount = assetKeys.filter(key => 
+    matureAssets.some(asset => key.includes(asset))
   ).length;
 
-  const maturityRatio = matureCount / tokenAddresses.length;
+  const maturityRatio = matureCount / Math.max(assetKeys.length, 1);
   return 30 + (maturityRatio * 70); // 30-100 scale
 }
 
 export function analyzeVolatilityExposure(balances: any): number {
-  // Simplified volatility analysis based on token types
+  // Stellar volatility analysis based on asset types
   if (!balances || Object.keys(balances).length === 0) {
     return 50; // Default score
   }
 
-  // Stable coins and major tokens = low volatility = high score
-  const stableTokens = [
-    '0xdac17f958d2ee523a2206206994597c13d831ec7', // USDT
-    '0xa0b86a33e6b8e6b9c4b25e1e1e7d2e3f4e5e6e7e', // USDC
-    '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599', // WBTC
+  // Stablecoins and major assets = low volatility = high score
+  const stableAssets = [
+    'XLM', // Native Stellar (relatively stable)
+    'USDC', // USD Coin (stablecoin)
+    'USDT', // Tether (stablecoin)
   ];
 
-  const tokenAddresses = Object.keys(balances);
-  const stableCount = tokenAddresses.filter(addr => 
-    stableTokens.includes(addr.toLowerCase())
+  const assetKeys = Object.keys(balances);
+  const stableCount = assetKeys.filter(key => 
+    stableAssets.some(asset => key.includes(asset))
   ).length;
 
-  const stabilityRatio = stableCount / tokenAddresses.length;
+  const stabilityRatio = stableCount / Math.max(assetKeys.length, 1);
   return 20 + (stabilityRatio * 80); // 20-100 scale
 }
 

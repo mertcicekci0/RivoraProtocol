@@ -30,7 +30,7 @@ export interface PortfolioState {
   error: string | null;
 }
 
-export function usePortfolio(chainId: number = 1) {
+export function usePortfolio() {
   const { account, isConnected } = useStellarWallet();
   const address = account?.publicKey || null;
   const [state, setState] = useState<PortfolioState>({
@@ -43,7 +43,7 @@ export function usePortfolio(chainId: number = 1) {
   const [lastFetchTime, setLastFetchTime] = useState<number>(0);
   const FETCH_COOLDOWN = 60000; // 1 minute cooldown
 
-  const fetchPortfolio = useCallback(async (walletAddress: string, targetChainId: number) => {
+  const fetchPortfolio = useCallback(async (walletAddress: string) => {
     // Check cooldown to prevent spam
     const now = Date.now();
     if (now - lastFetchTime < FETCH_COOLDOWN) {
@@ -63,7 +63,6 @@ export function usePortfolio(chainId: number = 1) {
         },
         body: JSON.stringify({
           walletAddress,
-          chainId: targetChainId,
         }),
       });
 
@@ -97,14 +96,14 @@ export function usePortfolio(chainId: number = 1) {
     if (address && isConnected) {
       // Reset cooldown for manual refetch
       setLastFetchTime(0);
-      fetchPortfolio(address, chainId);
+      fetchPortfolio(address);
     }
   };
 
   // Auto-fetch when wallet connects or changes
   useEffect(() => {
     if (address && isConnected) {
-      fetchPortfolio(address, chainId);
+      fetchPortfolio(address);
     } else {
       // Reset state when wallet disconnects
       setState({
@@ -113,7 +112,7 @@ export function usePortfolio(chainId: number = 1) {
         error: null,
       });
     }
-  }, [address, isConnected, chainId, fetchPortfolio]);
+  }, [address, isConnected, fetchPortfolio]);
 
   return {
     ...state,
