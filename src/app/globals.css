@@ -1,0 +1,203 @@
+/* Import Inter Font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* ❌ REMOVED: RainbowKit CSS - using Freighter wallet instead */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import Custom Styles */
+@import url('../styles/animations.css');
+@import url('../styles/components.css');
+
+/* Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  background: #0B0A0F;
+  color: white;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* Smooth Scrolling Enhancement */
+:root {
+  scroll-behavior: smooth;
+}
+
+/* Selection Styles */
+::selection {
+  background: rgba(0,117,255,0.3);
+  color: white;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(24,24,28,0.5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #0075FF, #9D4DFF);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #0075FF, #FF007A);
+}
+
+/* Focus Styles */
+button:focus-visible {
+  outline: 2px solid #0075FF;
+  outline-offset: 2px;
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Cosmic Dashboard Styling */
+.glassmorphism {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+}
+
+.glow-purple {
+  box-shadow: 0 0 20px rgba(128, 51, 255, 0.3), 0 0 40px rgba(128, 51, 255, 0.1);
+}
+
+.glow-cyan {
+  box-shadow: 0 0 20px rgba(0, 255, 224, 0.3), 0 0 40px rgba(0, 255, 224, 0.1);
+}
+
+.glow-pink {
+  box-shadow: 0 0 20px rgba(255, 0, 168, 0.3), 0 0 40px rgba(255, 0, 168, 0.1);
+}
+
+.cosmic-gradient {
+  background: linear-gradient(135deg, #8033ff 0%, #00FFE0 50%, #FF00A8 100%);
+}
+
+.cosmic-text-gradient {
+  background: linear-gradient(135deg, #8033ff 0%, #00FFE0 50%, #FF00A8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Dashboard Animations */
+@keyframes cosmicPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+}
+
+@keyframes floatCosmic {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(180deg);
+  }
+}
+
+@keyframes gradientShift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-cosmic-pulse {
+  animation: cosmicPulse 3s ease-in-out infinite;
+}
+
+.animate-float-cosmic {
+  animation: floatCosmic 6s ease-in-out infinite;
+}
+
+.animate-gradient-shift {
+  background-size: 200% 200%;
+  animation: gradientShift 4s ease infinite;
+}
+
+/* Dashboard Card Styles */
+.dashboard-card {
+  @apply glassmorphism p-6 transition-all duration-300 hover:scale-105;
+}
+
+.dashboard-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(128, 51, 255, 0.3);
+}
+
+/* Tab Navigation */
+.tab-active {
+  @apply cosmic-text-gradient border-b-2 border-purple-500;
+}
+
+.tab-inactive {
+  @apply text-gray-400 hover:text-white transition-colors duration-200;
+}
+
+/* Cosmic Canvas Background */
+.cosmic-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  opacity: 0.6;
+}
+
+/* Progress Ring */
+.progress-ring {
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+
+.progress-ring-circle {
+  transition: stroke-dashoffset 0.35s;
+  transform-origin: 50% 50%;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .dashboard-card {
+    @apply p-4;
+  }
+  
+  .glassmorphism {
+    backdrop-filter: blur(15px);
+  }
+}

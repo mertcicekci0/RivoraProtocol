@@ -1,0 +1,208 @@
+/* Starfield and Atmospheric Effects */
+.starfield {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(2px 2px at 20px 30px, #eee, transparent),
+    radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.5), transparent),
+    radial-gradient(1px 1px at 90px 40px, #fff, transparent),
+    radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.3), transparent),
+    radial-gradient(2px 2px at 160px 30px, #ddd, transparent);
+  background-repeat: repeat;
+  background-size: 200px 100px;
+  animation: sparkle 20s linear infinite;
+  opacity: 0.6;
+}
+
+.dust-particles {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(1px 1px at 25px 5px, rgba(0,117,255,0.2), transparent),
+    radial-gradient(1px 1px at 75px 25px, rgba(255, 0, 122, 0.15), transparent),
+    radial-gradient(1px 1px at 125px 15px, rgba(157, 77, 255, 0.1), transparent);
+  background-repeat: repeat;
+  background-size: 150px 75px;
+  animation: float 30s ease-in-out infinite;
+}
+
+@keyframes sparkle {
+  from { transform: translateX(0); }
+  to { transform: translateX(-200px); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(180deg); }
+}
+
+/* Text Decode Animations */
+.word-decode {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(50px) rotateX(90deg);
+  animation: decode 1.5s cubic-bezier(0.23, 1, 0.320, 1) forwards;
+}
+
+@keyframes decode {
+  0% {
+    opacity: 0;
+    transform: translateY(50px) rotateX(90deg);
+    filter: blur(10px);
+  }
+  50% {
+    opacity: 0.5;
+    transform: translateY(25px) rotateX(45deg);
+    filter: blur(5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotateX(0deg);
+    filter: blur(0px);
+  }
+}
+
+/* Feature Reveal Animations */
+.feature-card {
+  opacity: 0;
+  transform: translateY(100px) scale(0.8);
+  transition: all 0s;
+}
+
+.feature-card.animate-feature-reveal {
+  animation: featureReveal 1.2s cubic-bezier(0.23, 1, 0.320, 1) forwards;
+  animation-delay: var(--animation-delay);
+}
+
+@keyframes featureReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(100px) scale(0.8) rotateX(15deg);
+  }
+  60% {
+    opacity: 0.8;
+    transform: translateY(-10px) scale(1.02) rotateX(-2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotateX(0deg);
+  }
+}
+
+/* Word Unfold Animation */
+.word-unfold {
+  display: inline-block;
+  margin-right: 0.3em;
+  opacity: 0;
+  transform: rotateY(90deg) translateZ(-50px);
+  animation: unfold 0.8s cubic-bezier(0.23, 1, 0.320, 1) forwards;
+}
+
+@keyframes unfold {
+  0% {
+    opacity: 0;
+    transform: rotateY(90deg) translateZ(-50px);
+  }
+  50% {
+    opacity: 0.7;
+    transform: rotateY(45deg) translateZ(-25px);
+  }
+  100% {
+    opacity: 1;
+    transform: rotateY(0deg) translateZ(0px);
+  }
+}
+
+/* Icon Particles */
+.icon-particles {
+  position: absolute;
+  inset: -20px;
+  background: 
+    radial-gradient(circle at 20% 20%, var(--accent-color, #0075FF) 1px, transparent 1px),
+    radial-gradient(circle at 80% 80%, var(--accent-color, #0075FF) 1px, transparent 1px),
+    radial-gradient(circle at 40% 70%, var(--accent-color, #0075FF) 1px, transparent 1px);
+  background-size: 15px 15px;
+  opacity: 0;
+  animation: particleFloat 3s ease-in-out infinite;
+  animation-delay: var(--animation-delay);
+}
+
+@keyframes particleFloat {
+  0%, 100% {
+    opacity: 0;
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    opacity: 0.6;
+    transform: translateY(-10px) rotate(180deg);
+  }
+}
+
+/* Final CTA Animations */
+.title-word {
+  display: inline-block;
+  margin-right: 0.3em;
+  opacity: 0;
+  transform: translateY(50px) rotateX(90deg);
+  animation: titleReveal 1s cubic-bezier(0.23, 1, 0.320, 1) forwards;
+}
+
+@keyframes titleReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(50px) rotateX(90deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotateX(0deg);
+  }
+}
+
+/* Spotlight Effects */
+.spotlight {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.3;
+  animation: spotlightPulse 8s ease-in-out infinite;
+}
+
+.spotlight-1 {
+  top: 20%;
+  left: 10%;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, #0075FF, transparent);
+  animation-delay: 0s;
+}
+
+.spotlight-2 {
+  top: 60%;
+  right: 15%;
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, #FF007A, transparent);
+  animation-delay: 2.5s;
+}
+
+.spotlight-3 {
+  bottom: 20%;
+  left: 20%;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, #9D4DFF, transparent);
+  animation-delay: 5s;
+}
+
+@keyframes spotlightPulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.2);
+  }
+}
