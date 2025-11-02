@@ -474,7 +474,7 @@ const LimitOrderInterface: React.FC = () => {
             <h3 className="text-lg font-semibold text-white">AI Recommendations</h3>
             <div className="flex items-center space-x-1">
               <Shield className="w-4 h-4 text-green-400" />
-              <span className="text-xs text-green-400">Risk Score: {scoreData.deFiRiskScore}/100</span>
+              <span className="text-xs text-green-400">Trust Rating: {scoreData.deFiRiskScore}/100</span>
             </div>
           </div>
 
@@ -486,7 +486,7 @@ const LimitOrderInterface: React.FC = () => {
               </div>
               <p className="text-xs text-gray-300">
                 {scoreData.deFiRiskScore > 70 
-                  ? 'Your high risk score qualifies you for tighter spreads. Consider limit orders 2-3% from market price.'
+                  ? 'Your excellent trust rating qualifies you for tighter spreads. Consider limit orders 2-3% from market price.'
                   : 'Start with conservative limit orders 5-8% from market price to build your trading history.'
                 }
               </p>

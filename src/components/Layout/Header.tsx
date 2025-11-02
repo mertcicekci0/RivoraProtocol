@@ -25,11 +25,16 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange, onDisconnect })
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full cosmic-gradient flex items-center justify-center">
-              <span className="text-white font-bold text-lg">R</span>
-            </div>
-            <h1 className="text-2xl font-bold cosmic-text-gradient">Rivora</h1>
+          <div className="flex items-center">
+            <img 
+              src="/rivoralogo.png"
+              alt="Rivora" 
+              className="h-14 md:h-16 w-auto object-contain"
+              style={{ 
+                imageRendering: 'crisp-edges',
+                maxHeight: '64px'
+              }}
+            />
           </div>
 
           {/* Navigation Tabs */}

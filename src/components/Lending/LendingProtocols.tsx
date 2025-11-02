@@ -1,10 +1,12 @@
 'use client'
 
-import React, { useState } from 'react';
-import { Coins, Shield, Zap, ExternalLink } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Coins, Shield, Zap, ExternalLink, Sparkles, AlertCircle } from 'lucide-react';
+import { useScores } from '../../lib/hooks/useScores';
 
 const LendingProtocols: React.FC = () => {
   const [selectedProtocol, setSelectedProtocol] = useState<string | null>(null);
+  const { data: scoreData, loading: scoresLoading, isConnected } = useScores();
 
   const protocols = [
     {
@@ -81,8 +83,83 @@ const LendingProtocols: React.FC = () => {
     },
   ];
 
+  // Get recommended protocol based on trust rating
+  const recommendedProtocolId = useMemo(() => {
+    if (!scoreData || !isConnected) return null;
+
+    const trustRating = scoreData.deFiRiskScore;
+
+    // High trust rating (80+) = Excellent Trust = Recommend premium protocols
+    if (trustRating >= 80) {
+      return 'stellarterm'; // Safest, most established
+    }
+    // Good trust rating (60-79) = Strong Trust = Recommend established protocols
+    if (trustRating >= 60) {
+      return 'stellarx'; // Good balance of safety and features
+    }
+    // Moderate trust rating (40-59) = Building Trust = Recommend balanced protocols
+    if (trustRating >= 40) {
+      return 'stellarport'; // Medium risk, good features
+    }
+    // Lower trust rating (<40) = Emerging Trust = Recommend safest with guidance
+    return 'stellarterm'; // Default to safest
+  }, [scoreData, isConnected]);
+
+  const recommendedProtocol = protocols.find(p => p.id === recommendedProtocolId);
+
   return (
     <div className="space-y-6">
+      {/* Personalized Recommendation Banner */}
+      {isConnected && scoreData && recommendedProtocol && (
+        <div className="dashboard-card bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/30">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start space-x-4 flex-1">
+              <div className="p-3 bg-purple-500/20 rounded-lg">
+                <Sparkles className="w-6 h-6 text-purple-400" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="text-lg font-semibold text-white">Recommended for You</h3>
+                  <span className="px-2 py-1 bg-purple-500/20 text-purple-300 text-xs rounded-full">
+                    Trust Rating: {scoreData.deFiRiskScore.toFixed(0)}/100
+                  </span>
+                </div>
+                <p className="text-sm text-gray-300 mb-3">
+                  Based on your Rivora Trust Rating of <span className="text-purple-400 font-semibold">{scoreData.deFiRiskScore.toFixed(0)}</span>, we recommend{' '}
+                  <span className="text-cyan-400 font-semibold">{recommendedProtocol.name}</span> as the perfect match for your trust profile.
+                </p>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 text-xs text-gray-400">
+                    <Shield className="w-3 h-3" />
+                    <span>Protocol Risk: {recommendedProtocol.risk}</span>
+                  </div>
+                  <span className="text-xs text-gray-500">•</span>
+                  <div className="flex items-center gap-1 text-xs text-cyan-400">
+                    <Coins className="w-3 h-3" />
+                    <span>APY: {recommendedProtocol.apy}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Guidance for Emerging Trust */}
+      {isConnected && scoreData && scoreData.deFiRiskScore < 40 && (
+        <div className="dashboard-card bg-yellow-500/10 border border-yellow-500/30">
+          <div className="flex items-start space-x-3">
+            <AlertCircle className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <h4 className="text-sm font-semibold text-yellow-400 mb-1">Building Your Trust Profile</h4>
+              <p className="text-xs text-gray-300">
+                Your Trust Rating is {scoreData.deFiRiskScore.toFixed(0)}. We recommend starting with established protocols to build your DeFi reputation and enhance your trust rating.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="dashboard-card glow-cyan">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
@@ -94,16 +171,27 @@ const LendingProtocols: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {protocols.map((protocol) => (
+          {protocols.map((protocol) => {
+            const isRecommended = recommendedProtocolId === protocol.id && isConnected && scoreData;
+            return (
             <div
               key={protocol.id}
-              className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer ${
-                selectedProtocol === protocol.id
+              className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer relative ${
+                isRecommended
+                  ? 'bg-gradient-to-br from-purple-500/20 to-cyan-500/20 border-purple-500/50 shadow-lg shadow-purple-500/20'
+                  : selectedProtocol === protocol.id
                   ? 'bg-white/10 border-cyan-500/50'
                   : 'bg-white/5 border-white/10 hover:bg-white/8 hover:border-white/20'
               }`}
               onClick={() => setSelectedProtocol(selectedProtocol === protocol.id ? null : protocol.id)}
             >
+              {/* Recommended Badge */}
+              {isRecommended && (
+                <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 bg-purple-500/30 border border-purple-400/50 rounded-full">
+                  <Sparkles className="w-3 h-3 text-purple-300" />
+                  <span className="text-xs font-semibold text-purple-300">Recommended</span>
+                </div>
+              )}
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center space-x-3">
                   <span className="text-2xl">{protocol.logo}</span>
@@ -164,7 +252,8 @@ const LendingProtocols: React.FC = () => {
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

@@ -27,7 +27,7 @@ const InsightScore: React.FC = () => {
     },
     {
       icon: Shield,
-      title: 'Risk Level',
+      title: 'Trust Level',
       value: riskLevel?.level || 'N/A',
       color: riskLevel?.color || 'text-gray-400',
       bgColor: riskLevel?.bgColor || 'bg-gray-500/20',

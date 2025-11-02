@@ -1,16 +1,96 @@
 'use client'
 
-import React from 'react';
-import { Shield, Heart, User, TrendingUp, AlertTriangle, CheckCircle, RefreshCw, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Shield, Heart, User, TrendingUp, AlertTriangle, CheckCircle, RefreshCw, AlertCircle, Link2, Loader2 } from 'lucide-react';
 import { useScores, getRiskLevel, getHealthLevel, getUserTypeInfo } from '../../lib/hooks/useScores';
+import { useStellarWallet } from '../../lib/hooks/useStellarWallet';
 
 const ScoresOverview: React.FC = () => {
   const { data, loading, error, refetch, isConnected } = useScores();
+  const { account } = useStellarWallet();
+  const [savingToBlockchain, setSavingToBlockchain] = useState(false);
+  const [blockchainStatus, setBlockchainStatus] = useState<{ success?: boolean; message?: string } | null>(null);
 
   // Generate scores data with real API data or fallback
   const riskLevel = data ? getRiskLevel(data.deFiRiskScore) : { level: 'Low', color: 'text-blue-400', bgColor: 'bg-blue-500/20' };
   const healthLevel = data ? getHealthLevel(data.deFiHealthScore) : { level: 'Good', color: 'text-green-400', bgColor: 'bg-green-500/20' };
   const userTypeInfo = data ? getUserTypeInfo(data.userType) : { description: 'Active trader', emoji: '📈', color: 'text-green-400' };
+
+  // Handle save to blockchain
+  const handleSaveToBlockchain = async () => {
+    if (!data || !account) return;
+
+    setSavingToBlockchain(true);
+    setBlockchainStatus(null);
+
+    try {
+      // Step 1: Get transaction XDR from API
+      const response = await fetch('/api/blockchain/save-scores', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          walletAddress: account.publicKey,
+          trustRating: data.deFiRiskScore,
+          healthScore: data.deFiHealthScore,
+          userType: data.userType,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!result.success || !result.xdr) {
+        throw new Error(result.error || 'Failed to create transaction');
+      }
+
+      // Step 2: Sign transaction with Freighter
+      const { default: freighterApi } = await import('@stellar/freighter-api');
+      
+      const network = result.network === 'testnet' ? 'TESTNET' : 'PUBLIC';
+      
+      // Freighter signTransaction takes xdr and network
+      const signedXdr = await freighterApi.signTransaction(result.xdr, {
+        network,
+      });
+
+      if (!signedXdr) {
+        throw new Error('Transaction signing was cancelled or failed');
+      }
+
+      // Step 3: Submit signed transaction
+      const submitResponse = await fetch('/api/blockchain/submit-transaction', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          xdr: signedXdr,
+          network: result.network,
+        }),
+      });
+
+      const submitResult = await submitResponse.json();
+
+      if (submitResult.success) {
+        setBlockchainStatus({
+          success: true,
+          message: `✅ Scores saved to blockchain! Transaction: ${submitResult.transactionHash?.slice(0, 12)}...`,
+        });
+      } else {
+        throw new Error(submitResult.error || 'Failed to submit transaction');
+      }
+
+    } catch (error: any) {
+      console.error('Failed to save to blockchain:', error);
+      setBlockchainStatus({
+        success: false,
+        message: error.message || 'Failed to save scores to blockchain',
+      });
+    } finally {
+      setSavingToBlockchain(false);
+    }
+  };
 
   // Show loading state when fetching data
   if (!isConnected) {
@@ -74,8 +154,8 @@ const ScoresOverview: React.FC = () => {
   const scores = [
     {
       id: 'defi-risk',
-      title: 'DeFi Risk Score',
-      subtitle: 'Rivora Trust Index',
+      title: 'Rivora Trust Rating',
+      subtitle: 'Wallet Credibility Index',
       score: data ? Math.round(data.deFiRiskScore) : 87,
       maxScore: 100,
       color: 'from-blue-500 to-cyan-400',
@@ -83,7 +163,7 @@ const ScoresOverview: React.FC = () => {
       description: 'Security-focused analysis based on wallet history and protocol interactions',
       status: data ? (data.deFiRiskScore >= 80 ? 'excellent' : data.deFiRiskScore >= 60 ? 'good' : 'warning') : 'excellent',
       details: [
-        { label: 'Risk Level', value: riskLevel.level, status: (data?.deFiRiskScore || 0) >= 60 ? 'good' : 'warning' },
+        { label: 'Trust Level', value: riskLevel.level, status: (data?.deFiRiskScore || 0) >= 60 ? 'good' : 'warning' },
         { label: 'Data Quality', value: data?.metadata?.dataQuality || 'High', status: 'good' },
         { label: 'Analysis Date', value: data ? new Date(data.metadata?.timestamp || Date.now()).toLocaleDateString() : 'Demo', status: 'good' },
         { label: 'Metrics Analyzed', value: `${data?.metadata?.analyzedMetrics?.length || 8} factors`, status: 'excellent' },
@@ -260,6 +340,60 @@ const ScoresOverview: React.FC = () => {
         })}
       </div>
 
+      {/* Save to Blockchain */}
+      {data && account && (
+        <div className="dashboard-card bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/30">
+          <div className="flex items-center justify-between">
+            <div className="flex items-start space-x-4 flex-1">
+              <div className="p-3 bg-purple-500/20 rounded-lg">
+                <Link2 className="w-6 h-6 text-purple-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-white mb-2">Save to Blockchain</h3>
+                <p className="text-sm text-gray-300 mb-4">
+                  Permanently store your Rivora scores on the Stellar blockchain. Your scores will be publicly verifiable and immutable.
+                </p>
+                {blockchainStatus && (
+                  <div className={`mb-4 p-3 rounded-lg ${
+                    blockchainStatus.success 
+                      ? 'bg-green-500/20 border border-green-500/30' 
+                      : 'bg-red-500/20 border border-red-500/30'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      {blockchainStatus.success ? (
+                        <CheckCircle className="w-5 h-5 text-green-400" />
+                      ) : (
+                        <AlertCircle className="w-5 h-5 text-red-400" />
+                      )}
+                      <p className={`text-sm ${blockchainStatus.success ? 'text-green-300' : 'text-red-300'}`}>
+                        {blockchainStatus.message}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={handleSaveToBlockchain}
+              disabled={savingToBlockchain || !data || !account}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            >
+              {savingToBlockchain ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Signing...</span>
+                </>
+              ) : (
+                <>
+                  <Link2 className="w-5 h-5" />
+                  <span>Save to Blockchain</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Recommendations */}
       <div className="dashboard-card glow-cyan">
         <div className="flex items-center justify-between mb-6">
@@ -302,8 +436,8 @@ const ScoresOverview: React.FC = () => {
             </div>
             <p className="text-sm text-gray-300">
               {data && data.deFiRiskScore >= 80 
-                ? 'With your high trust score, you can access premium swap features and exclusive opportunities.'
-                : 'Increase secure swap usage and interact with verified protocols to improve your risk score.'
+                ? 'With your excellent trust rating, you can access premium swap features and exclusive opportunities.'
+                : 'Increase secure swap usage and interact with verified protocols to improve your trust rating.'
               }
             </p>
           </div>
