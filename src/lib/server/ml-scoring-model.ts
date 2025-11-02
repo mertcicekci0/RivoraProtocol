@@ -90,12 +90,14 @@ export async function trainMLModels(
     riskModel = createModel();
     healthModel = createModel();
 
-    const batchSize = Math.min(trainingData.length, 32);
+    // Larger batch size for better training with more data
+    const batchSize = Math.min(trainingData.length, 64);
 
-    // Train risk score model
+    // Train risk score model (more epochs for larger dataset)
     console.log('📊 Training Risk Score model...');
+    const riskEpochs = trainingData.length > 100 ? 150 : 100; // More epochs for larger datasets
     const riskHistory = await riskModel.fit(xs, riskYs, {
-      epochs: 100,
+      epochs: riskEpochs,
       batchSize,
       validationSplit: 0.2,
       verbose: 0, // Set to 1 for detailed logs
@@ -103,10 +105,11 @@ export async function trainMLModels(
 
     const riskFinalLoss = riskHistory.history.loss[riskHistory.history.loss.length - 1] as number;
 
-    // Train health score model
+    // Train health score model (more epochs for larger dataset)
     console.log('🏥 Training Health Score model...');
+    const healthEpochs = trainingData.length > 100 ? 150 : 100; // More epochs for larger datasets
     const healthHistory = await healthModel.fit(xs, healthYs, {
-      epochs: 100,
+      epochs: healthEpochs,
       batchSize,
       validationSplit: 0.2,
       verbose: 0,

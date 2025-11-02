@@ -36,60 +36,105 @@ interface TrainingSample {
  * Get random wallet addresses from recent ledgers
  * This finds active accounts from the Stellar network
  */
-async function getRandomWalletAddresses(count: number = 20): Promise<string[]> {
+async function getRandomWalletAddresses(count: number = 1000): Promise<string[]> {
   console.log(`\n🔍 Finding ${count} active Stellar wallets...\n`);
   
   const horizon = new Horizon.Server(HORIZON_URL);
   const wallets: Set<string> = new Set();
 
   try {
-    // Get recent transactions and extract unique account addresses
-    const transactions = await horizon.transactions()
-      .order('desc')
-      .limit(200)
-      .call();
-
-    for (const tx of transactions.records) {
-      // Add source account
-      if (tx.source_account && wallets.size < count) {
-        wallets.add(tx.source_account);
-      }
-
-      // Limit operation fetching to avoid too many API calls
-      // Only fetch operations for first few transactions to get more wallet addresses
-      if (wallets.size < count / 2) {
-        try {
-          const txOps = await horizon.operations()
-            .forTransaction(tx.hash)
-            .limit(10)
-            .call();
+    // Strategy: Get wallet addresses from recent operations instead of transactions
+    // Operations endpoint gives us more wallet addresses per API call
+    
+    console.log('📡 Fetching wallet addresses from recent operations...');
+    
+    // Fetch recent operations (they contain account addresses)
+    let cursor = '';
+    let iterations = 0;
+    const maxIterations = Math.ceil(count / 200); // Each call can give us ~200 unique addresses
+    
+    while (wallets.size < count && iterations < maxIterations) {
+      try {
+        const operationsCall = horizon.operations()
+          .order('desc')
+          .limit(200)
+          .cursor(cursor);
+        
+        const operations = await operationsCall.call();
+        
+        if (operations.records.length === 0) break;
+        
+        for (const op of operations.records) {
+          if (wallets.size >= count) break;
           
-          for (const op of txOps.records) {
-            if (wallets.size >= count) break;
-            
-            if (op.source_account) {
-              wallets.add(op.source_account);
-            }
-            
-            // Payment operations
-            if (op.type === 'payment' && (op as any).to) {
-              wallets.add((op as any).to);
-            }
-            
-            // Path payment operations
-            if ((op.type === 'path_payment_strict_receive' || op.type === 'path_payment_strict_send') && (op as any).destination) {
-              wallets.add((op as any).destination);
-            }
+          // Add source account
+          if (op.source_account) {
+            wallets.add(op.source_account);
           }
           
-          // Small delay to avoid rate limiting
-          await new Promise(resolve => setTimeout(resolve, 100));
-        } catch (err) {
-          // Skip if operations can't be fetched
+          // Payment operations
+          if (op.type === 'payment') {
+            const opData = op as any;
+            if (opData.to) wallets.add(opData.to);
+          }
+          
+          // Path payment operations
+          if (op.type === 'path_payment_strict_receive' || op.type === 'path_payment_strict_send') {
+            const opData = op as any;
+            if (opData.destination) wallets.add(opData.destination);
+            if (opData.from) wallets.add(opData.from);
+          }
+          
+          // Account merge
+          if (op.type === 'account_merge') {
+            const opData = op as any;
+            if (opData.into) wallets.add(opData.into);
+          }
+          
+          // Create account
+          if (op.type === 'create_account') {
+            const opData = op as any;
+            if (opData.account) wallets.add(opData.account);
+          }
         }
+        
+        // Set cursor for pagination
+        if (operations.records.length > 0) {
+          cursor = operations.records[operations.records.length - 1].paging_token;
+        } else {
+          break;
+        }
+        
+        iterations++;
+        console.log(`   Progress: ${wallets.size}/${count} wallets found...`);
+        
+        // Small delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+      } catch (error: any) {
+        console.warn(`   Warning: ${error.message}, trying alternative method...`);
+        break; // Try fallback method
       }
+    }
+    
+    // Fallback: Also get from recent transactions (if we still need more)
+    if (wallets.size < count) {
+      console.log(`📡 Fetching additional addresses from transactions...`);
+      try {
+        const transactions = await horizon.transactions()
+          .order('desc')
+          .limit(200)
+          .call();
 
-      if (wallets.size >= count) break;
+        for (const tx of transactions.records) {
+          if (wallets.size >= count) break;
+          if (tx.source_account) {
+            wallets.add(tx.source_account);
+          }
+        }
+      } catch (error) {
+        // Ignore errors
+      }
     }
 
     // Note: accounts endpoint may not be available or have restrictions
@@ -301,7 +346,20 @@ async function collectTrainingData() {
   const trainingSamples: TrainingSample[] = [];
 
   // Get wallet addresses
-  const walletAddresses = await getRandomWalletAddresses(20);
+  // Set WALLET_COUNT environment variable for custom count
+  // Default: 100 wallets (good balance for hackathon)
+  // Set TEST_MODE=true for quick testing with 10 wallets
+  const testMode = process.env.TEST_MODE === 'true';
+  const walletCountEnv = process.env.WALLET_COUNT ? parseInt(process.env.WALLET_COUNT, 10) : null;
+  const walletCount = walletCountEnv || (testMode ? 10 : 100); // Default 100 wallet
+  const walletAddresses = await getRandomWalletAddresses(walletCount);
+  
+  if (walletCount >= 500) {
+    console.log(`🎯 JÜRİ MODU: ${walletCount} wallet ile büyük dataset eğitimi`);
+    console.log(`   Bu işlem 30-60 dakika sürebilir...\n`);
+  } else if (testMode) {
+    console.log('🧪 TEST MODE: Only collecting 10 wallets for quick testing\n');
+  }
 
   if (walletAddresses.length === 0) {
     console.error('❌ No wallet addresses found. Please add wallet addresses manually.\n');
@@ -309,31 +367,59 @@ async function collectTrainingData() {
   }
 
   console.log('📊 Processing wallets...\n');
+  console.log(`🎯 Target: ${walletAddresses.length} wallets (aiming for quality training data)\n`);
 
-  // Process each wallet
+  // Process wallets with progress tracking
+  let successCount = 0;
+  let skipCount = 0;
+  let errorCount = 0;
+  const batchSize = 50; // Process in batches for better progress tracking
+
   for (let i = 0; i < walletAddresses.length; i++) {
     const walletAddress = walletAddresses[i];
     const displayAddress = `${walletAddress.substring(0, 8)}...${walletAddress.substring(48)}`;
     
-    process.stdout.write(`[${i + 1}/${walletAddresses.length}] ${displayAddress}... `);
+    // Progress indicator every 10 wallets
+    if (i % 10 === 0 || i === walletAddresses.length - 1) {
+      const progress = ((i + 1) / walletAddresses.length * 100).toFixed(1);
+      process.stdout.write(`\r⏳ Progress: ${i + 1}/${walletAddresses.length} (${progress}%) | ✅ ${successCount} | ⏭️ ${skipCount} | ❌ ${errorCount}`);
+    }
 
     try {
       const sample = await processWallet(walletAddress, horizon);
       
       if (sample) {
         trainingSamples.push(sample);
-        console.log(`✅ Risk: ${sample.riskScore.toFixed(1)}, Health: ${sample.healthScore.toFixed(1)}`);
+        successCount++;
       } else {
-        console.log('⏭️  Skipped (no data)');
+        skipCount++;
       }
 
-      // Rate limiting: wait between requests
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Reduced delay for faster collection (1000 wallets takes time)
+      await new Promise(resolve => setTimeout(resolve, 150));
 
     } catch (error: any) {
-      console.log(`❌ Error: ${error.message}`);
+      errorCount++;
+      // Don't spam errors for large batches
+      if (i % 100 === 0) {
+        console.log(`\n⚠️  Error at ${i + 1}: ${error.message}`);
+      }
+    }
+
+    // Save progress every 100 wallets (backup)
+    if ((i + 1) % 100 === 0 && trainingSamples.length > 0) {
+      const backupPath = path.join(process.cwd(), `training-data-backup-${i + 1}.json`);
+      const outputData = trainingSamples.map(s => ({
+        features: s.features,
+        riskScore: s.riskScore,
+        healthScore: s.healthScore,
+      }));
+      fs.writeFileSync(backupPath, JSON.stringify(outputData, null, 2));
+      console.log(`\n💾 Backup saved: ${backupPath} (${trainingSamples.length} samples)`);
     }
   }
+
+  console.log('\n'); // New line after progress
 
   // Save training data
   if (trainingSamples.length > 0) {
@@ -349,7 +435,20 @@ async function collectTrainingData() {
     
     console.log('\n' + '='.repeat(50));
     console.log(`✅ Collected ${trainingSamples.length} training samples`);
+    console.log(`📊 Statistics:`);
+    console.log(`   ✅ Success: ${successCount}`);
+    console.log(`   ⏭️  Skipped: ${skipCount}`);
+    console.log(`   ❌ Errors: ${errorCount}`);
     console.log(`💾 Saved to: ${outputPath}\n`);
+    
+    // Statistics about the data
+    if (trainingSamples.length > 0) {
+      const avgRisk = trainingSamples.reduce((sum, s) => sum + s.riskScore, 0) / trainingSamples.length;
+      const avgHealth = trainingSamples.reduce((sum, s) => sum + s.healthScore, 0) / trainingSamples.length;
+      console.log(`📈 Average Scores:`);
+      console.log(`   Risk Score: ${avgRisk.toFixed(2)}`);
+      console.log(`   Health Score: ${avgHealth.toFixed(2)}\n`);
+    }
     
     return trainingSamples;
   } else {
