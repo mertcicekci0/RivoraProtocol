@@ -9,7 +9,7 @@ import { useTokens, Token, formatPrice, formatPriceChange } from '../../lib/hook
 const LimitOrderInterface: React.FC = () => {
   const [orderType, setOrderType] = useState<'buy' | 'sell'>('buy');
   const [fromToken, setFromToken] = useState('USDC');
-  const [toToken, setToToken] = useState('ETH');
+  const [toToken, setToToken] = useState('XLM');
   const [amount, setAmount] = useState('');
   const [limitPrice, setLimitPrice] = useState('');
   const [expiry, setExpiry] = useState('1d');
@@ -51,12 +51,12 @@ const LimitOrderInterface: React.FC = () => {
       
       // Set default tokens if they exist
       const hasUSDC = availableTokens.some(t => t.symbol === 'USDC');
-      const hasETH = availableTokens.some(t => t.symbol === 'ETH' || t.symbol === 'WETH');
-      
+      const hasXLM = availableTokens.some(t => t.symbol === 'XLM');
+
       if (!hasUSDC && availableTokens.length > 0) {
         setFromToken(availableTokens[0].symbol);
       }
-      if (!hasETH && availableTokens.length > 1) {
+      if (!hasXLM && availableTokens.length > 1) {
         setToToken(availableTokens[1].symbol);
       }
     }
