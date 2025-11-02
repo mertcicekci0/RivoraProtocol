@@ -22,17 +22,16 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange, onDisconnect })
 
   return (
     <header className="glassmorphism border-b border-white/10 sticky top-0 z-50">
-      <div className="container mx-auto px-6 py-4">
-        <div className="flex items-center justify-between">
+      <div className="container mx-auto px-6 py-2">
+        <div className="flex items-center justify-between h-16 relative">
           {/* Logo */}
-          <div className="flex items-center">
+          <div className="flex items-center h-full overflow-visible">
             <img 
               src="/rivoralogo.png"
               alt="Rivora" 
-              className="h-14 md:h-16 w-auto object-contain"
+              className="h-28 md:h-36 lg:h-40 w-auto object-contain"
               style={{ 
-                imageRendering: 'crisp-edges',
-                maxHeight: '64px'
+                imageRendering: 'crisp-edges'
               }}
             />
           </div>
