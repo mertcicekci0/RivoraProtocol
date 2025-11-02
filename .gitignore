@@ -36,3 +36,9 @@ yarn-error.log*
 next-env.d.ts
 training-data.json
 training-data-backup-*.json
+
+# Soroban contract build artifacts
+contracts/**/target/
+contracts/**/Cargo.lock
+*.wasm
+.soroban-contract-id
