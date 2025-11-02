@@ -1,59 +1,83 @@
 'use client'
 
 import React, { useState } from 'react';
-import { Coins, TrendingUp, Shield, Zap, ExternalLink } from 'lucide-react';
+import { Coins, Shield, Zap, ExternalLink } from 'lucide-react';
 
 const LendingProtocols: React.FC = () => {
   const [selectedProtocol, setSelectedProtocol] = useState<string | null>(null);
 
   const protocols = [
     {
-      id: 'aave',
-      name: 'Aave',
-      logo: '🏦',
-      apy: '4.25%',
-      tvl: '$12.4B',
+      id: 'stellarterm',
+      name: 'StellarTerm',
+      logo: '⭐',
+      apy: '3.5%',
+      tvl: '$125M',
       risk: 'Low',
       riskColor: 'text-green-400',
-      description: 'Leading decentralized lending protocol with proven security',
-      tokens: ['USDC', 'ETH', 'WBTC', 'DAI'],
-      features: ['Flash Loans', 'Collateral Swapping', 'Rate Switching'],
+      description: 'Native Stellar DEX with liquidity pools and yield farming',
+      tokens: ['XLM', 'USDC', 'USDT', 'EURT'],
+      features: ['Native DEX', 'Liquidity Pools', 'Path Payments'],
     },
     {
-      id: 'compound',
-      name: 'Compound',
-      logo: '🏛️',
-      apy: '3.85%',
-      tvl: '$8.2B',
+      id: 'stellarx',
+      name: 'StellarX',
+      logo: '🌐',
+      apy: '4.2%',
+      tvl: '$89M',
       risk: 'Low',
       riskColor: 'text-green-400',
-      description: 'Algorithmic money market protocol with autonomous interest rates',
-      tokens: ['USDC', 'ETH', 'WBTC', 'UNI'],
-      features: ['Governance Token', 'Autonomous Rates', 'Liquidation Protection'],
+      description: 'Decentralized exchange on Stellar with integrated lending markets',
+      tokens: ['XLM', 'BTC', 'ETH', 'USDC'],
+      features: ['Integrated Trading', 'Trustline Management', 'Multi-Asset Support'],
     },
     {
-      id: 'maker',
-      name: 'MakerDAO',
-      logo: '🎯',
-      apy: '5.12%',
-      tvl: '$6.8B',
+      id: 'lobstr',
+      name: 'Lobstr',
+      logo: '🦞',
+      apy: '2.8%',
+      tvl: '$45M',
       risk: 'Medium',
       riskColor: 'text-yellow-400',
-      description: 'Decentralized credit platform enabling DAI generation',
-      tokens: ['ETH', 'WBTC', 'LINK', 'YFI'],
-      features: ['DAI Minting', 'Stability Fee', 'Liquidation Auctions'],
+      description: 'User-friendly wallet and DeFi platform with yield opportunities',
+      tokens: ['XLM', 'USDC', 'BRL', 'NGN'],
+      features: ['Mobile Wallet', 'Fiat On-Ramp', 'Yield Staking'],
     },
     {
-      id: 'yearn',
-      name: 'Yearn Finance',
-      logo: '🌾',
-      apy: '6.78%',
-      tvl: '$4.1B',
+      id: 'stellarport',
+      name: 'StellarPort',
+      logo: '🚀',
+      apy: '5.1%',
+      tvl: '$67M',
+      risk: 'Medium',
+      riskColor: 'text-yellow-400',
+      description: 'Advanced DEX interface with liquidity provision and lending',
+      tokens: ['XLM', 'USDC', 'USDT', 'XRP'],
+      features: ['Advanced Trading', 'Liquidity Provision', 'Multi-Sig Support'],
+    },
+    {
+      id: 'ultrastellar',
+      name: 'UltraStellar',
+      logo: '⚡',
+      apy: '6.3%',
+      tvl: '$32M',
+      risk: 'Medium',
+      riskColor: 'text-yellow-400',
+      description: 'Yield optimization and liquidity aggregation on Stellar network',
+      tokens: ['XLM', 'USDC', 'BTC', 'ETH'],
+      features: ['Yield Aggregation', 'Liquidity Mining', 'Auto-Compounding'],
+    },
+    {
+      id: 'stellarquest',
+      name: 'StellarQuest',
+      logo: '🎮',
+      apy: '7.5%',
+      tvl: '$18M',
       risk: 'High',
       riskColor: 'text-red-400',
-      description: 'Yield optimization protocol with automated strategies',
-      tokens: ['USDC', 'DAI', 'USDT', 'WETH'],
-      features: ['Auto-Compounding', 'Strategy Optimization', 'Vault System'],
+      description: 'Emerging DeFi protocol with innovative lending mechanisms',
+      tokens: ['XLM', 'USDC', 'Custom Tokens'],
+      features: ['Innovative Models', 'Community Governance', 'Early Access'],
     },
   ];
 
@@ -141,28 +165,6 @@ const LendingProtocols: React.FC = () => {
               )}
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* Lending Summary */}
-      <div className="dashboard-card">
-        <h3 className="text-lg font-semibold text-white mb-4">Your Lending Position</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="text-center p-4 bg-green-500/10 rounded-lg border border-green-500/20">
-            <TrendingUp className="w-8 h-8 text-green-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-white">$8,450</p>
-            <p className="text-sm text-gray-400">Total Supplied</p>
-          </div>
-          <div className="text-center p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
-            <Coins className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-white">$2,100</p>
-            <p className="text-sm text-gray-400">Total Borrowed</p>
-          </div>
-          <div className="text-center p-4 bg-purple-500/10 rounded-lg border border-purple-500/20">
-            <Shield className="w-8 h-8 text-purple-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-white">75%</p>
-            <p className="text-sm text-gray-400">Health Factor</p>
-          </div>
         </div>
       </div>
     </div>
