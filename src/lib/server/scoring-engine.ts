@@ -1,7 +1,11 @@
 // Scoring System with TensorFlow.js
 // This module calculates DeFi Risk Score and DeFi Health Score using TensorFlow.js
+// Supports both rule-based and ML-based scoring
 
 import * as tf from '@tensorflow/tfjs';
+import { extractMLFeatures } from './ml-feature-extractor';
+import { predictScoresML, areModelsLoaded } from './ml-scoring-model';
+import type { StellarPortfolioData } from './stellar-service';
 
 // Initialize TensorFlow.js with optimizations
 if (typeof process !== 'undefined' && process.env.NODE_ENV === 'production') {
@@ -84,6 +88,86 @@ export function calculateDeFiRiskScore(metrics: {
 
   // Return score clamped between 0-100
   return Math.max(0, Math.min(100, score));
+}
+
+/**
+ * Calculate Risk Score with ML fallback
+ * Tries ML prediction first, falls back to rule-based if models not loaded
+ */
+export function calculateDeFiRiskScoreWithML(
+  metrics: {
+    walletAgeScore: number;
+    transactionFrequencyScore: number;
+    secureSwapUsageScore: number;
+    tokenTrustworthinessScore: number;
+  },
+  portfolioData?: StellarPortfolioData
+): {
+  score: number;
+  method: 'ml' | 'rule-based';
+} {
+  // Try ML prediction if models are loaded and portfolio data available
+  if (portfolioData && areModelsLoaded()) {
+    try {
+      const features = extractMLFeatures(portfolioData);
+      const mlPrediction = predictScoresML(features);
+      
+      if (mlPrediction.riskScore !== null) {
+        return {
+          score: mlPrediction.riskScore,
+          method: 'ml',
+        };
+      }
+    } catch (error) {
+      console.warn('⚠️ ML prediction failed, falling back to rule-based:', error);
+    }
+  }
+
+  // Fallback to rule-based calculation
+  return {
+    score: calculateDeFiRiskScore(metrics),
+    method: 'rule-based',
+  };
+}
+
+/**
+ * Calculate Health Score with ML fallback
+ */
+export function calculateDeFiHealthScoreWithML(
+  metrics: {
+    tokenDiversityScore: number;
+    portfolioConcentrationScore: number;
+    tokenAgeAverageScore: number;
+    volatilityExposureScore: number;
+    gasEfficiencyScore: number;
+  },
+  portfolioData?: StellarPortfolioData
+): {
+  score: number;
+  method: 'ml' | 'rule-based';
+} {
+  // Try ML prediction if models are loaded and portfolio data available
+  if (portfolioData && areModelsLoaded()) {
+    try {
+      const features = extractMLFeatures(portfolioData);
+      const mlPrediction = predictScoresML(features);
+      
+      if (mlPrediction.healthScore !== null) {
+        return {
+          score: mlPrediction.healthScore,
+          method: 'ml',
+        };
+      }
+    } catch (error) {
+      console.warn('⚠️ ML prediction failed, falling back to rule-based:', error);
+    }
+  }
+
+  // Fallback to rule-based calculation
+  return {
+    score: calculateDeFiHealthScore(metrics),
+    method: 'rule-based',
+  };
 }
 
 // ========================================
