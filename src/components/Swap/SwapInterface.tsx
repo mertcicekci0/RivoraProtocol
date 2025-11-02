@@ -6,16 +6,20 @@ import { ArrowUpDown, Settings, Zap, Info } from 'lucide-react';
 const SwapInterface: React.FC = () => {
   const [fromAmount, setFromAmount] = useState('');
   const [toAmount, setToAmount] = useState('');
-  const [fromToken, setFromToken] = useState('ETH');
+  const [fromToken, setFromToken] = useState('XLM');
   const [toToken, setToToken] = useState('USDC');
   const [slippage, setSlippage] = useState('0.5');
 
+  // Stellar ecosystem tokens
   const tokens = [
-    { symbol: 'ETH', name: 'Ethereum', price: '$2,450', balance: '5.2341' },
+    { symbol: 'XLM', name: 'Stellar Lumens', price: '$0.12', balance: '1,245.50' },
     { symbol: 'USDC', name: 'USD Coin', price: '$1.00', balance: '12,450.50' },
-    { symbol: 'BTC', name: 'Bitcoin', price: '$43,250', balance: '0.1592' },
-    { symbol: 'AAVE', name: 'Aave', price: '$275.80', balance: '10.0' },
-    { symbol: 'UNI', name: 'Uniswap', price: '$13.45', balance: '102.7' },
+    { symbol: 'USDT', name: 'Tether USD', price: '$1.00', balance: '5,678.90' },
+    { symbol: 'EURT', name: 'Euro Tether', price: '$1.08', balance: '890.25' },
+    { symbol: 'yXLM', name: 'Yield XLM', price: '$0.12', balance: '523.45' },
+    { symbol: 'yUSDC', name: 'Yield USDC', price: '$1.00', balance: '2,340.67' },
+    { symbol: 'AQUA', name: 'Aqua Token', price: '$0.05', balance: '15,678.90' },
+    { symbol: 'BTC', name: 'Bitcoin on Stellar', price: '$43,250', balance: '0.1592' },
   ];
 
   const handleSwapTokens = () => {
@@ -27,9 +31,17 @@ const SwapInterface: React.FC = () => {
 
   const calculateToAmount = (amount: string) => {
     if (!amount) return '';
-    const rate = fromToken === 'ETH' ? 2450 : fromToken === 'BTC' ? 43250 : 1;
-    const toRate = toToken === 'ETH' ? 2450 : toToken === 'BTC' ? 43250 : 1;
-    return ((parseFloat(amount) * rate) / toRate).toFixed(6);
+    
+    // Get token prices
+    const fromTokenData = tokens.find(t => t.symbol === fromToken);
+    const toTokenData = tokens.find(t => t.symbol === toToken);
+    
+    if (!fromTokenData || !toTokenData) return '';
+    
+    const fromPrice = parseFloat(fromTokenData.price.replace('$', '').replace(',', ''));
+    const toPrice = parseFloat(toTokenData.price.replace('$', '').replace(',', ''));
+    
+    return ((parseFloat(amount) * fromPrice) / toPrice).toFixed(6);
   };
 
   const handleFromAmountChange = (value: string) => {
