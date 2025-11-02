@@ -26,6 +26,7 @@ import {
   calculateDeFiHealthScoreWithML,
   classifyUserType,
 } from '../../lib/server/scoring-engine';
+import { ensureModelsLoaded } from '../../lib/server/ml-model-loader';
 
 // API Response interface
 interface ScoreResponse {
@@ -60,6 +61,12 @@ interface ScoreResponse {
   };
 }
 
+// Error Response interface
+interface ErrorResponse {
+  error: string;
+  details?: string;
+}
+
 // API Request interface
 interface ScoreRequest {
   walletAddress: string; // Stellar public key (G...)
@@ -67,7 +74,7 @@ interface ScoreRequest {
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<ScoreResponse | { error: string }>
+  res: NextApiResponse<ScoreResponse | ErrorResponse>
 ) {
   // Only allow POST requests
   if (req.method !== 'POST') {
@@ -92,6 +99,9 @@ export default async function handler(
     }
 
     console.log(`🔍 Analyzing Stellar account: ${walletAddress}`);
+    
+    // Ensure ML models are loaded (lazy loading on first request)
+    await ensureModelsLoaded();
     
     // Fetch Stellar portfolio data
     const stellarPortfolioData = await getStellarPortfolioData(walletAddress);
