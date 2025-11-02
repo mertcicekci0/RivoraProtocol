@@ -1,9 +1,8 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { TrendingUp, Clock, Target, Settings, Shield, Zap, Award, RefreshCw, AlertCircle, X } from 'lucide-react';
+import { Clock, Target, Settings, RefreshCw, AlertCircle, X } from 'lucide-react';
 import { useStellarWallet } from '../../lib/hooks/useStellarWallet';
-import { useScores } from '../../lib/hooks/useScores';
 import { useLimitOrders, getOrderStatus, getOrderProgress, getTimeUntilExpiry, LimitOrder } from '../../lib/hooks/useLimitOrders';
 import { useTokens, Token, formatPrice, formatPriceChange } from '../../lib/hooks/useTokens';
 
@@ -15,9 +14,7 @@ const LimitOrderInterface: React.FC = () => {
   const [limitPrice, setLimitPrice] = useState('');
   const [expiry, setExpiry] = useState('1d');
 
-  // Get user scores for intelligent recommendations
-  const { data: scoreData, isConnected } = useScores();
-  const { account } = useStellarWallet();
+  const { account, isConnected } = useStellarWallet();
   const address = account?.publicKey || null;
   
   // Get limit orders data
@@ -464,46 +461,6 @@ const LimitOrderInterface: React.FC = () => {
         </div>
       </div>
 
-      {/* AI-Powered Recommendations */}
-      {scoreData && (
-        <div className="dashboard-card glow-purple">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="p-2 bg-purple-500/20 rounded-lg">
-              <Zap className="w-6 h-6 text-purple-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-white">AI Recommendations</h3>
-            <div className="flex items-center space-x-1">
-              <Shield className="w-4 h-4 text-green-400" />
-              <span className="text-xs text-green-400">Trust Rating: {scoreData.deFiRiskScore}/100</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-3 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-lg border border-blue-500/20">
-              <div className="flex items-center space-x-2 mb-2">
-                <TrendingUp className="w-4 h-4 text-blue-400" />
-                <span className="text-sm font-semibold text-blue-400">Price Strategy</span>
-              </div>
-              <p className="text-xs text-gray-300">
-                {scoreData.deFiRiskScore > 70 
-                  ? 'Your excellent trust rating qualifies you for tighter spreads. Consider limit orders 2-3% from market price.'
-                  : 'Start with conservative limit orders 5-8% from market price to build your trading history.'
-                }
-              </p>
-            </div>
-
-            <div className="p-3 bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-lg border border-green-500/20">
-              <div className="flex items-center space-x-2 mb-2">
-                <Award className="w-4 h-4 text-green-400" />
-                <span className="text-sm font-semibold text-green-400">User Type Bonus</span>
-              </div>
-              <p className="text-xs text-gray-300">
-                As an {scoreData.userType.toLowerCase()}, you get enhanced order matching priority and reduced fees on limit orders.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Token Approval Modal */}
       {showTokenApproval && (
