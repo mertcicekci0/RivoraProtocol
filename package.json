@@ -14,7 +14,9 @@
     "production": "npm run clean && npm run lint && npm run type-check && npm run build",
     "collect-data": "ts-node --project tsconfig.scripts.json scripts/collect-training-data.ts",
     "train-model": "ts-node --project tsconfig.scripts.json scripts/train-ml-model.ts",
-    "ml-setup": "npm run collect-data && npm run train-model"
+    "augment-data": "ts-node --project tsconfig.scripts.json scripts/augment-training-data.ts",
+    "ml-setup": "npm run collect-data && npm run train-model",
+    "ml-setup-1000": "npm run collect-data && npm run augment-data && mv training-data-augmented.json training-data.json && npm run train-model"
   },
   "dependencies": {
     "@stellar/freighter-api": "^1.5.0",
