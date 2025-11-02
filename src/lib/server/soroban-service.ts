@@ -2,7 +2,6 @@
 // Interacts with the Rivora Scores Soroban contract on Stellar
 
 import { 
-  Server, 
   TransactionBuilder, 
   Operation,
   Networks,
@@ -10,7 +9,7 @@ import {
   xdr,
   Keypair,
 } from '@stellar/stellar-sdk';
-import { SorobanRpc } from '@stellar/stellar-sdk';
+import { Horizon, SorobanRpc } from '@stellar/stellar-sdk';
 
 // Stellar network configuration
 const HORIZON_URL = process.env.STELLAR_HORIZON_URL || 'https://horizon.stellar.org';
@@ -23,7 +22,7 @@ const SOROBAN_RPC_URL = NETWORK === 'testnet'
   ? process.env.SOROBAN_RPC_URL || 'https://soroban-testnet.stellar.org'
   : process.env.SOROBAN_RPC_URL || 'https://soroban.stellar.org';
 
-const horizonServer = new Server(
+const horizonServer = new Horizon.Server(
   NETWORK === 'testnet' ? TESTNET_HORIZON_URL : HORIZON_URL
 );
 

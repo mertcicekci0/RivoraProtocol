@@ -2,13 +2,13 @@
 // POST /api/blockchain/submit-transaction
 
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { Server, Transaction, Networks } from '@stellar/stellar-sdk';
+import { Transaction, Networks, Horizon } from '@stellar/stellar-sdk';
 
 const HORIZON_URL = process.env.STELLAR_HORIZON_URL || 'https://horizon.stellar.org';
 const TESTNET_HORIZON_URL = process.env.STELLAR_TESTNET_HORIZON_URL || 'https://horizon-testnet.stellar.org';
 const NETWORK = (process.env.STELLAR_NETWORK || 'testnet') as 'mainnet' | 'testnet';
 
-const horizonServer = new Server(
+const horizonServer = new Horizon.Server(
   NETWORK === 'testnet' ? TESTNET_HORIZON_URL : HORIZON_URL
 );
 
