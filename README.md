@@ -70,6 +70,7 @@
 3. **Airdrop Distribution**: Efficiently score and categorize wallets for fair distribution
 4. **DEX Aggregators**: Route trades based on user trust levels
 5. **Risk Management**: Real-time monitoring of wallet health metrics
+6. **Wallet Integration**: User data can be commonly tracked in all wallets in the Stellar ecosystem and this feature can be saved as a tool in all wallets
 
 ---
 
