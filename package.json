@@ -11,7 +11,10 @@
     "lint:fix": "next lint --fix",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf .next out",
-    "production": "npm run clean && npm run lint && npm run type-check && npm run build"
+    "production": "npm run clean && npm run lint && npm run type-check && npm run build",
+    "collect-data": "ts-node --project tsconfig.scripts.json scripts/collect-training-data.ts",
+    "train-model": "ts-node --project tsconfig.scripts.json scripts/train-ml-model.ts",
+    "ml-setup": "npm run collect-data && npm run train-model"
   },
   "dependencies": {
     "@stellar/freighter-api": "^1.5.0",
@@ -35,6 +38,7 @@
     "pino-pretty": "^13.1.1",
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.1",
+    "ts-node": "^10.9.2",
     "typescript": "^5.5.3"
   }
 }

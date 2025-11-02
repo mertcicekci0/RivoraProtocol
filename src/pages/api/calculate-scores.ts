@@ -22,6 +22,8 @@ import {
 import { 
   calculateDeFiRiskScore,
   calculateDeFiHealthScore,
+  calculateDeFiRiskScoreWithML,
+  calculateDeFiHealthScoreWithML,
   classifyUserType,
 } from '../../lib/server/scoring-engine';
 
@@ -174,23 +176,34 @@ export default async function handler(
     );
     analyzedMetrics.push('Gas Efficiency');
 
-    // Step 5: Calculate Final Scores using TensorFlow.js
-    console.log('🧮 Computing final scores with TensorFlow.js...');
+    // Step 5: Calculate Final Scores using ML (if available) or rule-based
+    console.log('🧮 Computing final scores...');
 
-    const deFiRiskScore = calculateDeFiRiskScore({
+    // Try ML prediction first, fallback to rule-based
+    const riskScoreResult = calculateDeFiRiskScoreWithML({
       walletAgeScore,
       transactionFrequencyScore,
       secureSwapUsageScore,
       tokenTrustworthinessScore,
-    });
+    }, stellarPortfolioData || undefined);
 
-    const deFiHealthScore = calculateDeFiHealthScore({
+    const healthScoreResult = calculateDeFiHealthScoreWithML({
       tokenDiversityScore,
       portfolioConcentrationScore,
       tokenAgeAverageScore,
       volatilityExposureScore,
       gasEfficiencyScore,
-    });
+    }, stellarPortfolioData || undefined);
+
+    const deFiRiskScore = riskScoreResult.score;
+    const deFiHealthScore = healthScoreResult.score;
+    const scoringMethod = riskScoreResult.method; // 'ml' or 'rule-based'
+
+    if (scoringMethod === 'ml') {
+      console.log('✅ Using ML models for scoring');
+    } else {
+      console.log('📊 Using rule-based scoring (ML models not loaded)');
+    }
 
     // Step 6: Classify User Type
     console.log('👤 Classifying user type...');
